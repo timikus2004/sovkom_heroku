@@ -8,8 +8,17 @@ from werkzeug.security import check_password_hash,generate_password_hash
 
 
 app = Flask(__name__)
+
+ENV = 'prod'
+
+if ENV == 'dev':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
+    app.debug = True
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://lchvtkoztfyvnt:9f1ff8fe29d951cb27a821bcee40882863a224b3636b316f47a769b4d264852c@ec2-3-213-228-206.compute-1.amazonaws.com:5432/d3ann4ba97q4s9'
+    app.debug = False
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
 app.config['SECRET_KEY']= '8630513a082cef10a197111db08c7217d685af2e62204bbe'
 
 db = SQLAlchemy(app)
@@ -93,3 +102,7 @@ def logout():
 def unauthorized(error):
     message = 'you are not logged in'
     return render_template('error.html', msg=message, title='401 error')
+
+
+if __name__ == '__main__':
+    app.run()
