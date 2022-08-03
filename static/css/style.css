@@ -1,0 +1,12 @@
+.error{
+    background-color: red;
+    border: 3px solid black;
+    border: 3px;
+}
+.flashes{
+    background-color: green;
+}
+
+.registration{
+    text-decoration: none;
+}
