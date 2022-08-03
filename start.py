@@ -15,7 +15,7 @@ if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
     app.debug = True
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://lchvtkoztfyvnt:9f1ff8fe29d951cb27a821bcee40882863a224b3636b316f47a769b4d264852c@ec2-3-213-228-206.compute-1.amazonaws.com:5432/d3ann4ba97q4s9'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://lchvtkoztfyvnt:9f1ff8fe29d951cb27a821bcee40882863a224b3636b316f47a769b4d264852c@ec2-3-213-228-206.compute-1.amazonaws.com:5432/d3ann4ba97q4s9'
     app.debug = False
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
