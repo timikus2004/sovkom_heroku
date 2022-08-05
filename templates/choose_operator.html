@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="choose_container">
+    <p><a href="{{ url_for('index')}}">Main page</a></p>
+    <p>Choose operator:</p>
+    <form action="/choose" method="POST">
+        <select name="operators" required="required">
+            <option >Operators:</option>
+            {% for operator in operators %}
+            <option >{{operator.op_name}}</option>
+            {% endfor %}
+            <p><input type="submit" value="Show data"/>
+        </select>
+    </form>      
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="table_container">
+    <table>
+    <caption>Заявка по оператору:</caption>
+    <tr>
+        <th>Номер заявки</th>
+        <th>Номер договора</th>
+        <th>Дата и время создания</th>
+        <th>Статус просрочки</th>
+        
+    </tr>
+    <tr>
+        <td>{{data.request_id}}</td>
+        <td>{{data.contract_id}}</td>
+        <td>{{data.created}}</td>
+        <td>{{data.status}}</td>
+    </tr>
+    </table>
+</div>
+
+
+{% endblock %}

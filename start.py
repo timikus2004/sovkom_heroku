@@ -1,7 +1,7 @@
 from collections import namedtuple
-from xml.dom.pulldom import ErrorHandler
+from datetime import datetime
 
-from flask import Flask, render_template, request,redirect, url_for,flash, session
+from flask import Flask, make_response, render_template, request,redirect, url_for,flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash,generate_password_hash
@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash,generate_password_hash
 
 app = Flask(__name__)
 
-ENV = 'dev'
+ENV = 'prod'
 
 if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
@@ -34,6 +34,33 @@ class User(db.Model, UserMixin):
     def __init__(self,username,password):
         self.username = username
         self.password = password
+
+class Operator(db.Model):
+    __tablename__ = 'operators'
+    id = db.Column('id', db.Integer, primary_key=True)
+    op_name = db.Column('op_name', db.String(30), unique=True)
+    requests = db.relationship('Request', backref=db.backref('operators', lazy=True))
+
+    def __init__(self,op_name):
+        self.op_name = op_name
+
+class Request(db.Model):
+    __tablename__ = 'requests'
+    id = db.Column('id', db.Integer, primary_key=True)
+    request_id = db.Column('request_id', db.Integer, unique=True, nullable=False)
+    contract_id = db.Column('contract_id', db.Integer, unique=True, nullable=False)
+    created = db.Column('created', db.DateTime, nullable=False, default=datetime.utcnow)
+    status = db.Column('status', db.Boolean)
+    checked = db.Column('checked', db.Boolean)
+    operator_id = db.Column('operator_id', db.Integer, db.ForeignKey('operators.id'), nullable=False)
+
+    def __init__(self, request_id, contract_id, status, checked, operator_id):
+        self.request_id = request_id
+        self.contract_id = contract_id
+        self.status = status
+        self.checked = checked
+        self.operator_id = operator_id
+        
         
 @login_manager.user_loader
 def load_user(user_id):
@@ -103,6 +130,45 @@ def unauthorized(error):
     message = 'you are not logged in'
     return render_template('error.html', msg=message, title='401 error')
 
+@app.route('/choose', methods=['GET','POST'])
+@login_required
+def choose():
+    operators = Operator.query.all()
+    if request.method == 'POST':
+        operator = request.form.get('operators')
+        if operator:
+            response = make_response(redirect(url_for('reqlist')))
+            response.set_cookie('operator',operator)
+            return response
+        
+    return render_template('choose_operator.html',operators=operators)
+
+@app.route('/reqlist', methods=['GET','POST'])
+@login_required
+def reqlist():
+    operator_name = request.cookies.get('operator')
+    op_id = Operator.query.filter_by(op_name = operator_name).first().id
+    data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10)
+    
+    return render_template('list_of_requests.html', data = data, operator = operator_name)
+    
+@app.route('/reqlist/<int:page_num>', methods=['GET','POST'])
+@login_required
+def reqlist_pag(page_num):  
+    operator_name = request.cookies.get('operator')
+    op_id = Operator.query.filter_by(op_name = operator_name).first().id
+    data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10, page = page_num)
+    return render_template('list_of_requests.html',data = data, operator=operator_name)
+    
+    
+
+@app.route('/showreq/<int:id>')
+@login_required
+def showreq(id):
+    result = Request.query.get(id)
+    # print(result)
+    return render_template('request.html',data=result)
+    # return 'success'
 
 if __name__ == '__main__':
     app.run()
