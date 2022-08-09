@@ -1,12 +1,69 @@
+a {
+    text-decoration: none;
+}
+li {
+    display: inline;
+    padding-left: 30px;
+}
+
+table {
+    border-collapse: collapse;
+    border: 3px solid grey;
+}
+
+th {
+    border: 1px solid grey;
+ }
+
+ td {
+    border: 1px solid grey;
+ }
+
+ th, td {
+    border: 1px solid grey;
+ }
+
+
+.image{
+    text-align: center;
+}
+
 .error{
-    background-color: red;
+    background-color: rgb(203, 143, 143);
     border: 3px solid black;
     border: 3px;
 }
 .flashes{
-    background-color: green;
+    background-color: rgb(75, 145, 75);
 }
 
 .registration{
     text-decoration: none;
+}
+.login_form {
+    text-align: center;
+}
+.register_btn{
+    text-align: center;
+}
+.register_form{
+    text-align: center;
+}
+.table_container{
+    text-align: center;
+    margin-left: 30%;
+    padding-top: 10%
+}
+
+.choose_container {
+    text-align: center;
+}
+
+.requests_container {
+    text-align: center;
+}
+
+.requests_container > p {
+    border: 1px solid grey;
+    background-color: aqua;
 }

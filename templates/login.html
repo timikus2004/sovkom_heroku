@@ -2,13 +2,15 @@
 
 
 {% block content %}
-    <div class="form_container">
+    <div class="login_form">
         <form action="/login" method="POST">
-            <p><input type="text" name="username" placeholder="username" required></p>
-            <p><input type="text" name="password" placeholder="password" required></p>
-            <p><input type="submit" value="submit"></p>
+            <p><input type="text" name="username" placeholder="Пользователь" required></p>
+            <p><input type="text" name="password" placeholder="Пароль" required></p>
+            <p><input type="submit" value="Войти в аккаунт"></p>
         </form>
     </div>
-    <p><a class="registration" href="/register">Registration</a></p>
+    <div class="register_btn">
+        <a href="/register">Перейти на регистрацию</a>
+    </div>
 
 {% endblock %}

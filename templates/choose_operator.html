@@ -2,15 +2,15 @@
 
 {% block content %}
 <div class="choose_container">
-    <p><a href="{{ url_for('index')}}">Main page</a></p>
-    <p>Choose operator:</p>
+    <p><a href="{{ url_for('index')}}">Вернуться на главную</a></p>
+    <p>Выберите оператора:</p>
     <form action="/choose" method="POST">
         <select name="operators" required="required">
-            <option >Operators:</option>
+            <option >Список операторов:</option>
             {% for operator in operators %}
             <option >{{operator.op_name}}</option>
             {% endfor %}
-            <p><input type="submit" value="Show data"/>
+            <p><input type="submit" value="Показать заявки"/>
         </select>
     </form>      
 </div>

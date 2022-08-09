@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash,generate_password_hash
 
 app = Flask(__name__)
 
-ENV = 'prod'
+ENV = 'dev'
 
 if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
@@ -49,7 +49,7 @@ class Request(db.Model):
     id = db.Column('id', db.Integer, primary_key=True)
     request_id = db.Column('request_id', db.Integer, unique=True, nullable=False)
     contract_id = db.Column('contract_id', db.Integer, unique=True, nullable=False)
-    created = db.Column('created', db.DateTime, nullable=False, default=datetime.utcnow)
+    created = db.Column('created', db.DateTime, nullable=False, default=datetime.now)
     status = db.Column('status', db.Boolean)
     checked = db.Column('checked', db.Boolean)
     operator_id = db.Column('operator_id', db.Integer, db.ForeignKey('operators.id'), nullable=False)
@@ -62,14 +62,51 @@ class Request(db.Model):
         self.operator_id = operator_id
         
         
+
+@app.route('/')
+def index():
+    if 'logged' in session:
+        user = session.get('username')
+        return render_template('index.html', username = user)
+    return render_template('index.html')
+
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if session.get('logged'):
+        flash('Вы уже вошли в аккаунт')
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        usrname = request.form.get('username')
+        password = request.form.get('password')
+        result = User.query.filter_by(username=usrname).first()
+        if result and check_password_hash(result.password, password):
+            login_user(result)
+            flash('Вы вошли в аккаунт')
+            session['logged'] = 'logged'
+            session['username'] = usrname
+            return redirect(url_for('index'))
+        else:
+            flash('Чтобы продолжить работу пожалуйста зарегистрируйтесь')
+            return redirect(url_for('register'))
+    return render_template('login.html')
+
+
 @login_manager.user_loader
 def load_user(user_id):
     print(f'load user id : {user_id}')
     return User.query.get(user_id)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    session['logged'] = None
+    session['username'] = None
+    flash('Вы вышли из аккаунта')
+    return redirect(url_for('index'))
+
 
 @app.route('/register', methods=['GET','POST'])
 def register():
@@ -78,7 +115,7 @@ def register():
         password = request.form.get('password')
         password2 = request.form.get('password2')
         if password != password2:
-            flash('passwords are not equal')
+            flash('Пароли не совпадают!')
             return redirect(url_for('register'))
         result = User.query.filter_by(username=usrname).count()
         if result == 0 and password.__eq__(password2):
@@ -86,49 +123,13 @@ def register():
             add_user = User(username=usrname,password=gen_pass)
             db.session.add(add_user)
             db.session.commit()
-            flash('[INFO]: registered succesfully, enter your credentials')
+            flash('Регистрация прошла успешно, ввойдите в аккаунт')
             return redirect(url_for('login'))
         else:
-            flash('[INFO]: user exists')
+            flash('Пользователь с таким именем уже существует')
             return redirect(url_for('register'))
     return render_template('register.html')
 
-
-
-@app.route('/login', methods=['GET','POST'])
-def login():
-    # error = ''
-    if session.get('logged'):
-        flash('[INFO]: already logged in')
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        usrname = request.form.get('username')
-        password = request.form.get('password')
-        result = User.query.filter_by(username=usrname).first()
-        if result and check_password_hash(result.password, password):
-            login_user(result)
-            flash('[INFO]: logging...')
-            session['logged'] = 'logged'
-            return redirect(url_for('index',hello=usrname))
-        else:
-            # error = '[ERROR]: Please register'
-            flash('Please register')
-            return redirect(url_for('register'))
-    return render_template('login.html')
-
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    session['logged'] = None
-    flash('[INFO]: logged out')
-    return redirect(url_for('index'))
-
-@app.errorhandler(401)
-def unauthorized(error):
-    message = 'you are not logged in'
-    return render_template('error.html', msg=message, title='401 error')
 
 @app.route('/choose', methods=['GET','POST'])
 @login_required
@@ -149,7 +150,6 @@ def reqlist():
     operator_name = request.cookies.get('operator')
     op_id = Operator.query.filter_by(op_name = operator_name).first().id
     data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10)
-    
     return render_template('list_of_requests.html', data = data, operator = operator_name)
     
 @app.route('/reqlist/<int:page_num>', methods=['GET','POST'])
@@ -160,7 +160,6 @@ def reqlist_pag(page_num):
     data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10, page = page_num)
     return render_template('list_of_requests.html',data = data, operator=operator_name)
     
-    
 
 @app.route('/showreq/<int:id>')
 @login_required
@@ -169,6 +168,18 @@ def showreq(id):
     # print(result)
     return render_template('request.html',data=result)
     # return 'success'
+
+
+@app.errorhandler(401)
+def unauthorized(error):
+    message = 'Вы не зарегистрированы, пожалуйста пройдите авторизацию'
+    return render_template('error.html', msg=message, title='Ошибка авторизации')
+
+@app.errorhandler(404)
+def not_found(error):
+    message = 'Страница не найдена'
+    return render_template('error.html', msg=message, title='Страница не найдена')
+
 
 if __name__ == '__main__':
     app.run()

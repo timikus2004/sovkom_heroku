@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link type="text/css" rel="stylesheet" href="url_for('static',filename='css/style.css')">
+    <link type="text/css" rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
     <title>{{title}}</title>
 </head>
 <body>
@@ -14,23 +14,24 @@
             {% for message in messages %}
                 <li>{{ message }}</li>
             {% endfor %}
+            {% if error %}
+                <div class="error">{{error}}</div>
+            {% endif %}
             </ul>
         {% endif %}
     {% endwith %}
     {% block nav %}
         <nav>
             <ul>
-                <li><a href="/">Main</a></li>
-                <li><a href="/login">Login</a></li>
-                <li><a href="/logout">Logout</a></li>
-                <li><a href="/choose">Choose</a></li>
+                <li><a href="/">На главную</a></li>
+                <li><a href="/login">Авторизоваться</a></li>
+                <li><a href="/logout">Выйти из аккаунта</a></li>
+                <li><a href="/choose">Выбрать оператора</a></li>
             </ul>
         </nav>
     {% endblock %}
     {% block content %}
-        {% if error %}
-            <div class="error">{{error}}</div>
-        {% endif %}
+        
     {% endblock %}
 </body>
 </html>

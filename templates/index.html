@@ -2,7 +2,13 @@
 
 
 {% block content %}
-    {% if hello %}
-    <p>Hello {{hello}}</p>
-    {% endif %}
+    <div class="image">
+        {% if username %}
+            <p>Здравствуй {{username}}</p>
+        {% else %}
+            <p>Вы не авторизованы</p>
+        {% endif %}
+        
+        <img src="../static/images/sovkombank.png" alt="Главная страница">
+    </div>  
 {% endblock %}
