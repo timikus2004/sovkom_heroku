@@ -1,25 +1,30 @@
 from collections import namedtuple
 from datetime import datetime
+from dotenv import load_dotenv
 
 from flask import Flask, make_response, render_template, request,redirect, url_for,flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash,generate_password_hash
 
+from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY
+
+load_dotenv()
+
 
 app = Flask(__name__)
 
-ENV = 'prod'
+ENV = 'dev'
 
 if ENV == 'dev':
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
+    app.config['SQLALCHEMY_DATABASE_URI'] = LOCALHOST_URI
     app.debug = True
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://rvkvqakqvuuths:0dbef51e9fac3b9c8278d561e66a14cbfa51b2c566127cd99d425917f528291b@ec2-44-205-112-253.compute-1.amazonaws.com:5432/d4u1t5hsfvs1ll'
+    app.config['SQLALCHEMY_DATABASE_URI'] = HEROKU_URI
     app.debug = False
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY']= '8630513a082cef10a197111db08c7217d685af2e62204bbe'
+app.config['SECRET_KEY']= SECRET_KEY
 
 db = SQLAlchemy(app)
 
@@ -182,4 +187,5 @@ def not_found(error):
 
 
 if __name__ == '__main__':
+    print(SECRET_KEY)
     app.run()

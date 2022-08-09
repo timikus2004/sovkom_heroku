@@ -1,0 +1,7 @@
+import os
+
+
+LOCALHOST_URI = os.getenv('LOCALHOST_DATABASE_URI')
+HEROKU_URI = os.getenv('HEROKU_DATABASE_URI')
+SECRET_KEY = os.getenv('APP_SECRET_KEY')
+
