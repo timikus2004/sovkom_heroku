@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash,generate_password_hash
 
 app = Flask(__name__)
 
-ENV = 'dev'
+ENV = 'prod'
 
 if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://timikus:password@localhost/myapp'
