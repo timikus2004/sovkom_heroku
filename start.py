@@ -7,19 +7,22 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from werkzeug.security import check_password_hash,generate_password_hash
 
-from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY
+from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY, DATABASE_URL
 
 
 app = Flask(__name__)
 
-ENV = 'prod'
+ENV = 'heroku'
 
-if ENV == 'dev':
-    app.config['SQLALCHEMY_DATABASE_URI'] = LOCALHOST_URI
-    app.debug = True
-else:
+if ENV == 'docker':
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    app.debug = False
+elif ENV == 'heroku':
     app.config['SQLALCHEMY_DATABASE_URI'] = HEROKU_URI
     app.debug = False
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = LOCALHOST_URI
+    app.debug = True
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY']= SECRET_KEY
@@ -204,7 +207,9 @@ def showreq(id):
             return render_template('request.html',data=info, error=error)
 
     info = Request.query.get(id)
-    result = Exam.query.filter_by(request_id = id).all()[-1] # to do with multiple results
+    result = Exam.query.filter_by(request_id = id).all()
+    if len(result) > 0:
+        result = Exam.query.filter_by(request_id=id).all()[-1] 
     return render_template('request.html',data=info, data2 = result)
     # return 'success'
 
