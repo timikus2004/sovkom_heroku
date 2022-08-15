@@ -12,7 +12,7 @@ from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY
 
 app = Flask(__name__)
 
-ENV = 'dev'
+ENV = 'prod'
 
 if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = LOCALHOST_URI
