@@ -4,21 +4,57 @@
 <div class="table_container">
     <table>
     <caption>Информация по заявке:</caption>
-    <tr class="tbl_row">
+    <tr>
         <th>Номер заявки</th>
         <th>Номер договора</th>
-        <th>Дата и время создания</th>
+        <th>Дата создания</th>
         <th>Статус просрочки</th>
         
     </tr>
-    <tr class="tbl_row">
+    <tr>
         <td>{{data.request_id}}</td>
         <td>{{data.contract_id}}</td>
-        <td>{{data.created}}</td>
+        <td>{{data.created.date()}}</td>
         <td>{{data.status}}</td>
     </tr>
     </table>
 </div>
-
+<div class="exam_container">
+    <p>Проверка оператора:</p>
+    <form  method="POST">
+        <select name="exams" required="required">
+            <option >Решение по оператору:</option>
+            {% for exam in ['ЧИСТ','НАРУШ','НЕ ПРОВ'] %}
+            <option >{{exam}}</option>
+            {% endfor %}
+            <p><input type="submit" value="Сохранить"/>
+        </select>
+    </form>      
+</div>
+<div class="table_container">   
+    <table>
+    <caption>Результат последней проверки:</caption>
+    <tr>
+        <th>Кем проверена заявка</th>
+        <th>Дата проверки</th>
+        <th>Статус проверки</th>
+        <th>Решение по оператору</th>   
+    </tr>
+    <tr>
+        {% if data2 %}
+        <td>{{data2.examinator}}</td>
+        <td>{{data2.created.date()}}</td>
+        <td>{{data2.status}}</td>
+        <td>{{data2.op_decision}}</td>
+        {% else %}
+        <td>Нет данных</td>
+        <td>Нет данных</td>
+        <td>Не проверена</td>
+        <td>Нет решения</td>
+        {% endif %}
+        
+    </tr>
+    </table>
+</div>
 
 {% endblock %}

@@ -1,15 +1,13 @@
+from ast import operator
 from collections import namedtuple
-from datetime import datetime
-from dotenv import load_dotenv
+from datetime import date, datetime
 
 from flask import Flask, make_response, render_template, request,redirect, url_for,flash, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
+from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from werkzeug.security import check_password_hash,generate_password_hash
 
 from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY
-
-load_dotenv()
 
 
 app = Flask(__name__)
@@ -66,7 +64,22 @@ class Request(db.Model):
         self.checked = checked
         self.operator_id = operator_id
         
-        
+class Exam(db.Model):
+    __tablename__ = 'exams'
+    id = db.Column('id', db.Integer, primary_key = True)
+    examinator = db.Column('examinator', db.String(25), nullable=False)
+    created = db.Column('created', db.DateTime, nullable=False, default=datetime.now)
+    status = db.Column('status', db.String(25), nullable=False)
+    op_decision = db.Column('op_decision', db.String(25))
+    request_id = db.Column('requests_id', db.Integer, db.ForeignKey('requests.id'), nullable=False)
+
+    def __init__(self,examinator,created,status,op_decision,request_id):
+        self.examinator = examinator
+        self.created = created
+        self.status = status 
+        self.op_decision = op_decision
+        self.request_id = request_id
+
 
 @app.route('/')
 def index():
@@ -85,6 +98,9 @@ def login():
         usrname = request.form.get('username')
         password = request.form.get('password')
         result = User.query.filter_by(username=usrname).first()
+        if not result:
+            flash('Пожалуйста зарегистрируйтесь')
+            return redirect(url_for('register'))
         if result and check_password_hash(result.password, password):
             login_user(result)
             flash('Вы вошли в аккаунт')
@@ -92,14 +108,13 @@ def login():
             session['username'] = usrname
             return redirect(url_for('index'))
         else:
-            flash('Чтобы продолжить работу пожалуйста зарегистрируйтесь')
-            return redirect(url_for('register'))
+            flash('Не правильно введён пароль')
+            return redirect(url_for('login'))
     return render_template('login.html')
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    print(f'load user id : {user_id}')
     return User.query.get(user_id)
 
 
@@ -142,42 +157,61 @@ def choose():
     operators = Operator.query.all()
     if request.method == 'POST':
         operator = request.form.get('operators')
-        if operator:
-            response = make_response(redirect(url_for('reqlist')))
+        if operator and operator != 'Список операторов:':
+            response = make_response(redirect(url_for('reqlist_pag',page_num=1)))
             response.set_cookie('operator',operator)
             return response
+        else:
+            flash("Выберите оператора")
+            return render_template('choose_operator.html',operators=operators)
         
     return render_template('choose_operator.html',operators=operators)
 
-@app.route('/reqlist', methods=['GET','POST'])
-@login_required
-def reqlist():
-    operator_name = request.cookies.get('operator')
-    op_id = Operator.query.filter_by(op_name = operator_name).first().id
-    data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10)
-    return render_template('list_of_requests.html', data = data, operator = operator_name)
     
 @app.route('/reqlist/<int:page_num>', methods=['GET','POST'])
 @login_required
-def reqlist_pag(page_num):  
+def reqlist_pag(page_num): 
     operator_name = request.cookies.get('operator')
     op_id = Operator.query.filter_by(op_name = operator_name).first().id
-    data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10, page = page_num)
+    data = Request.query.filter_by(operator_id=op_id).paginate(per_page=10,page = page_num)
+    if request.method == 'POST':
+        start_date = request.form.get('start_date')
+        data = Request.query.filter_by(operator_id=op_id).filter(Request.created >= start_date).paginate(per_page=10,page=page_num)
+        print(f'pagination post: {data.total}')
+        if data.pages == 0:
+            flash('C введенной даты заявок не было, введите другую дату')
+        return render_template('list_of_requests.html',data = data, operator=operator_name)
+
     return render_template('list_of_requests.html',data = data, operator=operator_name)
     
 
-@app.route('/showreq/<int:id>')
+@app.route('/showreq/<int:id>', methods=['GET','POST'])
 @login_required
 def showreq(id):
-    result = Request.query.get(id)
-    # print(result)
-    return render_template('request.html',data=result)
+    error = ''
+    if request.method == 'POST':
+        examinator = current_user.username
+        decision = request.form.get('exams')
+        status = 'checked'
+        if decision:
+            created = datetime.now()
+            ex = Exam(examinator=examinator, created=created, status=status, op_decision=decision, request_id=id)
+            db.session.add(ex)
+            db.session.commit()
+            flash('Данные успешно добавлены')
+        else:
+            error = "Выберите решение по оператору из выпадающего списка"
+            return render_template('request.html',data=info, error=error)
+
+    info = Request.query.get(id)
+    result = Exam.query.filter_by(request_id = id).all()[-1] # to do with multiple results
+    return render_template('request.html',data=info, data2 = result)
     # return 'success'
 
 
 @app.errorhandler(401)
 def unauthorized(error):
-    message = 'Вы не зарегистрированы, пожалуйста пройдите авторизацию'
+    message = 'Вы не авторизованы'
     return render_template('error.html', msg=message, title='Ошибка авторизации')
 
 @app.errorhandler(404)
@@ -187,5 +221,4 @@ def not_found(error):
 
 
 if __name__ == '__main__':
-    print(SECRET_KEY)
     app.run()

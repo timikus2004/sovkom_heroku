@@ -65,5 +65,9 @@ th {
 
 .requests_container > p {
     border: 1px solid grey;
-    background-color: aqua;
+    background-color: rgb(192, 238, 238);
+}
+
+.exam_container {
+    text-align: center;
 }
