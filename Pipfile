@@ -11,6 +11,9 @@ psycopg2-binary = "*"
 flask-sqlalchemy = "*"
 flask-login = "*"
 python-dotenv = "*"
+flask-script = "*"
+flask-migrate = "*"
+flask-admin = "*"
 
 [dev-packages]
 

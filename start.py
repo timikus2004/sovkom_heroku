@@ -1,18 +1,23 @@
-from ast import operator
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import datetime, time
+import click
 
 from flask import Flask, make_response, render_template, request,redirect, url_for,flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
-from werkzeug.security import check_password_hash,generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+from flask_migrate import Migrate
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+
 
 from config import LOCALHOST_URI, HEROKU_URI, SECRET_KEY, DATABASE_URL
 
 
 app = Flask(__name__)
 
-ENV = 'heroku'
+
+ENV = 'dev'
 
 if ENV == 'docker':
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -20,7 +25,7 @@ if ENV == 'docker':
 elif ENV == 'heroku':
     app.config['SQLALCHEMY_DATABASE_URI'] = HEROKU_URI
     app.debug = False
-else:
+elif ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = LOCALHOST_URI
     app.debug = True
 
@@ -29,7 +34,35 @@ app.config['SECRET_KEY']= SECRET_KEY
 
 db = SQLAlchemy(app)
 
+admin = Admin(app)
+
+migrate = Migrate(app, db)
+
 login_manager = LoginManager(app=app)
+
+
+@app.cli.command("create_tables")
+def create_tables():
+    db.create_all()
+
+
+@app.cli.command("insert_operators")
+def insert_operators():
+    Operators = [Operator('Operator{}'.format(i)) for i in range(1,10)]
+    for op in Operators:
+        db.session.add(op)
+        
+    db.session.commit()
+
+@app.cli.command("insert_requests")
+@click.argument('name')
+def insert_data(name):
+    Requests = [Request(int('{}'.format(i)),int('{}'.format(i+50)),True, False, int(f'{name}')) for i in range(1,30)]
+    for req in Requests:
+        db.session.add(req)
+       
+    db.session.commit()
+    
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -47,14 +80,15 @@ class Operator(db.Model):
     op_name = db.Column('op_name', db.String(30), unique=True)
     requests = db.relationship('Request', backref=db.backref('operators', lazy=True))
 
+
     def __init__(self,op_name):
         self.op_name = op_name
 
 class Request(db.Model):
     __tablename__ = 'requests'
     id = db.Column('id', db.Integer, primary_key=True)
-    request_id = db.Column('request_id', db.Integer, unique=True, nullable=False)
-    contract_id = db.Column('contract_id', db.Integer, unique=True, nullable=False)
+    request_id = db.Column('request_id', db.Integer, nullable=False)
+    contract_id = db.Column('contract_id', db.Integer, nullable=False)
     created = db.Column('created', db.DateTime, nullable=False, default=datetime.now)
     status = db.Column('status', db.Boolean)
     checked = db.Column('checked', db.Boolean)
@@ -146,7 +180,7 @@ def register():
             add_user = User(username=usrname,password=gen_pass)
             db.session.add(add_user)
             db.session.commit()
-            flash('Регистрация прошла успешно, ввойдите в аккаунт')
+            flash('Регистрация прошла успешно, войдите в аккаунт')
             return redirect(url_for('login'))
         else:
             flash('Пользователь с таким именем уже существует')
@@ -192,26 +226,29 @@ def reqlist_pag(page_num):
 @login_required
 def showreq(id):
     error = ''
-    if request.method == 'POST':
-        examinator = current_user.username
-        decision = request.form.get('exams')
-        status = 'checked'
-        if decision:
-            created = datetime.now()
-            ex = Exam(examinator=examinator, created=created, status=status, op_decision=decision, request_id=id)
-            db.session.add(ex)
-            db.session.commit()
-            flash('Данные успешно добавлены')
-        else:
-            error = "Выберите решение по оператору из выпадающего списка"
-            return render_template('request.html',data=info, error=error)
-
     info = Request.query.get(id)
+    if request.method == 'POST':
+        if info.checked == False:
+            examinator = current_user.username
+            decision = request.form.get('exams')
+            status = 'checked'
+            if decision:
+                created = datetime.now()
+                ex = Exam(examinator=examinator, created=created, status=status, op_decision=decision, request_id=id)
+                info.checked = True
+                db.session.add(ex)
+                db.session.commit()
+                flash('Данные успешно добавлены')
+            else:
+                error = "Выберите решение по оператору из выпадающего списка"
+                return render_template('request.html',data=info, error=error)
+        else:
+            flash('Заявка уже была проверена, выберите другую')
+    
     result = Exam.query.filter_by(request_id = id).all()
     if len(result) > 0:
         result = Exam.query.filter_by(request_id=id).all()[-1] 
     return render_template('request.html',data=info, data2 = result)
-    # return 'success'
 
 
 @app.errorhandler(401)
@@ -224,6 +261,10 @@ def not_found(error):
     message = 'Страница не найдена'
     return render_template('error.html', msg=message, title='Страница не найдена')
 
+admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Operator, db.session))
+admin.add_view(ModelView(Request, db.session))
+admin.add_view(ModelView(Exam, db.session))
 
 if __name__ == '__main__':
     app.run()
